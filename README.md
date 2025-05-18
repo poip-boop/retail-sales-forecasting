@@ -1,4 +1,4 @@
-# 📈Time Series Forecasting: SARIMA vs Prophet vs LSTM
+# Time Series Forecasting
 
 This project evaluates and compares three time series forecasting models — **SARIMA**, **Prophet**, and **LSTM** — for predicting economic indicators such as inflation. The aim is to identify the best-performing model based on standard evaluation metrics.
 
