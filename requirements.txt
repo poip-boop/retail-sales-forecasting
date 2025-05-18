@@ -1,6 +1,7 @@
+--upgrade-strategy eager
+numpy==1.24.4
 streamlit
 pandas
-numpy==1.24.4
 matplotlib
 plotly
 scikit-learn
