@@ -20,7 +20,13 @@ import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
+from fredapi import Fred
 
+# Load API key from environment variable
+fred_api_key = os.getenv("FRED_API_KEY")
+if not fred_api_key:
+    raise ValueError("FRED_API_KEY environment variable not set")
+fred = Fred(api_key=fred_api_key)
 
 # Handle warnings
 warnings.filterwarnings('ignore')
