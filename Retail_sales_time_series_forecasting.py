@@ -234,6 +234,13 @@ def main():
     st.set_page_config(page_title="Retail Sales Forecasting", layout="wide")
     logger.info("Starting main function")
 
+    # Define models dictionary at higher scope
+    models = {
+        "SARIMA": train_sarima,
+        "Prophet": train_prophet,
+        # "LSTM": lambda x: train_lstm(x, CONFIG["LSTM_N_STEPS"])  # Uncomment after testing
+    }
+
     # Sidebar Inputs
     with st.sidebar:
         st.header("Settings")
@@ -275,12 +282,6 @@ def main():
         st.subheader("Model Performance Comparison")
         if st.button("Run Model Comparison"):
             logger.info("Running model comparison")
-            # Temporarily exclude LSTM to test stability
-            models = {
-                "SARIMA": train_sarima,
-                "Prophet": train_prophet,
-                # "LSTM": lambda x: train_lstm(x, CONFIG["LSTM_N_STEPS"])  # Uncomment after testing
-            }
             rows = []
             for name, func in models.items():
                 logger.info(f"Running model: {name}")
@@ -293,7 +294,7 @@ def main():
 
     with tab3:
         st.subheader("Forecast vs Actual")
-        model_choice = st.selectbox("Select Model", ["SARIMA", "Prophet"])  # Update options when LSTM is re-enabled
+        model_choice = st.selectbox("Select Model", ["SARIMA", "Prophet"])  # Update when LSTM is re-enabled
         forecast, lower, upper = models[model_choice](train)
         fc_df = pd.DataFrame({"date": forecast.index, "forecast": forecast, "lower": lower, "upper": upper})
         actual = df["value"].rename("actual")

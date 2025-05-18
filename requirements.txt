@@ -9,3 +9,7 @@ prophet==1.1.4
 fredapi==0.5.2
 streamlit==1.45.1
 tensorflow==2.15.0
+keras==2.15.0
+ml-dtypes==0.2.0
+tensorboard==2.15.2
+wrapt==1.14.1
