@@ -45,6 +45,23 @@ Forecasting future values of economic time series data is crucial for planning a
 
 ---
 
+##  Evaluation Metrics
+
+- **MAE (Mean Absolute Error)**: Measures average magnitude of errors.
+- **RMSE (Root Mean Squared Error)**: Penalizes larger errors more heavily.
+- **MAPE (Mean Absolute Percentage Error)**: Percentage-based accuracy (NaN if actual values contain 0).
+
+---
+
+##  Getting Started
+
+###  Clone the repository
+
+```bash
+git clone https://github.com/poip-boop/retail-sales-forecasting.git
+cd forecasting-project
+
+
 
 
 
