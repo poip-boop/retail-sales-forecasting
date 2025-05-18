@@ -238,7 +238,7 @@ def main():
     models = {
         "SARIMA": train_sarima,
         "Prophet": train_prophet,
-        # "LSTM": lambda x: train_lstm(x, CONFIG["LSTM_N_STEPS"])  # Uncomment after testing
+        "LSTM": lambda x: train_lstm(x, CONFIG["LSTM_N_STEPS"])
     }
 
     # Sidebar Inputs
@@ -294,7 +294,7 @@ def main():
 
     with tab3:
         st.subheader("Forecast vs Actual")
-        model_choice = st.selectbox("Select Model", ["SARIMA", "Prophet"])  # Update when LSTM is re-enabled
+        model_choice = st.selectbox("Select Model", ["SARIMA", "Prophet", "LSTM"])
         forecast, lower, upper = models[model_choice](train)
         fc_df = pd.DataFrame({"date": forecast.index, "forecast": forecast, "lower": lower, "upper": upper})
         actual = df["value"].rename("actual")
