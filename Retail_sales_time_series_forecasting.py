@@ -48,9 +48,9 @@ CONFIG = {
     "DEFAULT_END_DATE": "2025-04-01",
     "FORECAST_HORIZON": 12,
     "LSTM_N_STEPS": 12,
-    "LSTM_EPOCHS": 10,  # Reduced for Streamlit Cloud
+    "LSTM_EPOCHS": 5,  # Further reduced to prevent crashes
     "LSTM_BATCH_SIZE": 32,  # Increased for efficiency
-    "LSTM_UNITS": 32,  # Reduced for lower resource usage
+    "LSTM_UNITS": 16,  # Further reduced for lower resource usage
     "SEASONAL_PERIOD": 12,
     "SARIMA_ORDER": (1, 1, 1),
     "SARIMA_SEASONAL_ORDER": (1, 1, 1, 12)
@@ -187,7 +187,10 @@ def train_lstm(train: pd.Series, n_steps: int):
         return forecast, lower, upper
     except Exception as e:
         logger.error(f"Error in train_lstm: {str(e)}", exc_info=True)
-        raise
+        st.error(f"LSTM model failed: {str(e)}")
+        # Return dummy forecast to prevent app crash
+        dummy_forecast = pd.Series([0] * CONFIG["FORECAST_HORIZON"], index=pd.date_range(start=train.index[-1], periods=CONFIG["FORECAST_HORIZON"], freq='MS'))
+        return dummy_forecast, dummy_forecast, dummy_forecast
 
 # Evaluation
 def evaluate_forecast(true: pd.Series, pred: pd.Series) -> dict:
@@ -210,7 +213,7 @@ def evaluate_forecast(true: pd.Series, pred: pd.Series) -> dict:
         return {"MAE": mae, "RMSE": rmse, "MAPE (%)": mape}
     except Exception as e:
         logger.error(f"Error in evaluate_forecast: {str(e)}", exc_info=True)
-        raise
+        return {"MAE": np.nan, "RMSE": np.nan, "MAPE (%)": np.nan}
 
 def plot_acf_pacf(series):
     """Plot ACF and PACF with Plotly."""
@@ -240,6 +243,7 @@ def main():
         "Prophet": train_prophet,
         "LSTM": lambda x: train_lstm(x, CONFIG["LSTM_N_STEPS"])
     }
+    logger.info(f"Available models: {list(models.keys())}")
 
     # Sidebar Inputs
     with st.sidebar:
@@ -285,27 +289,37 @@ def main():
             rows = []
             for name, func in models.items():
                 logger.info(f"Running model: {name}")
-                forecast, *_ = func(train)
-                metrics = evaluate_forecast(test, forecast)
-                metrics["Model"] = name
-                rows.append(metrics)
-            st.table(pd.DataFrame(rows).set_index("Model").style.format("{:.2f}"))
+                try:
+                    forecast, *_ = func(train)
+                    metrics = evaluate_forecast(test, forecast)
+                    metrics["Model"] = name
+                    rows.append(metrics)
+                except Exception as e:
+                    logger.error(f"Error running {name}: {str(e)}", exc_info=True)
+                    st.error(f"Error running {name}: {str(e)}")
+            if rows:
+                st.table(pd.DataFrame(rows).set_index("Model").style.format("{:.2f}"))
             logger.info("Model comparison completed")
 
     with tab3:
         st.subheader("Forecast vs Actual")
-        model_choice = st.selectbox("Select Model", ["SARIMA", "Prophet", "LSTM"])
-        forecast, lower, upper = models[model_choice](train)
-        fc_df = pd.DataFrame({"date": forecast.index, "forecast": forecast, "lower": lower, "upper": upper})
-        actual = df["value"].rename("actual")
-        combined = pd.concat([actual, fc_df.set_index("date")], axis=1)
+        model_choice = st.selectbox("Select Model", list(models.keys()), key="forecast_model_select")
+        logger.info(f"Selected model: {model_choice}")
+        try:
+            forecast, lower, upper = models[model_choice](train)
+            fc_df = pd.DataFrame({"date": forecast.index, "forecast": forecast, "lower": lower, "upper": upper})
+            actual = df["value"].rename("actual")
+            combined = pd.concat([actual, fc_df.set_index("date")], axis=1)
 
-        fig = px.line(combined.reset_index(), x="date", y=["actual", "forecast"], title="Forecast vs Actual")
-        fig.add_scatter(x=fc_df["date"], y=fc_df["lower"], mode='lines', name='Lower CI', line=dict(dash='dot'))
-        fig.add_scatter(x=fc_df["date"], y=fc_df["upper"], mode='lines', name='Upper CI', line=dict(dash='dot'))
-        st.plotly_chart(fig, use_container_width=True)
+            fig = px.line(combined.reset_index(), x="date", y=["actual", "forecast"], title="Forecast vs Actual")
+            fig.add_scatter(x=fc_df["date"], y=fc_df["lower"], mode='lines', name='Lower CI', line=dict(dash='dot'))
+            fig.add_scatter(x=fc_df["date"], y=fc_df["upper"], mode='lines', name='Upper CI', line=dict(dash='dot'))
+            st.plotly_chart(fig, use_container_width=True)
 
-        st.download_button("Download Forecast", combined.to_csv(index=True), "forecast.csv")
+            st.download_button("Download Forecast", combined.to_csv(index=True), "forecast.csv")
+        except Exception as e:
+            logger.error(f"Error generating forecast for {model_choice}: {str(e)}", exc_info=True)
+            st.error(f"Failed to generate forecast for {model_choice}: {str(e)}")
 
 if __name__ == "__main__":
     main()
